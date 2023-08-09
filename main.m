@@ -1,70 +1,79 @@
-%-----------------------------------------------------------% 
-%-----------------------------------------------------------%
-%---------- Codigo optimizacion motor 4 tiempos ------------%
-%-----------------------------------------------------------%
-%-----------------------------------------------------------%
+%-------------------------------------------------------------------------%
+%------------------ Optimization of 4-Stroke Engine Parameters ------------%
+%-------------------------------------------------------------------------%
+% This MATLAB code performs optimization on parameters related to a        %
+% 4-stroke engine using three different optimization techniques:          %
+% gradient-based optimization (fmincon), genetic algorithms (ga),         %
+% and derivative-free optimization (fminsearch). The optimization aims    %
+% to find optimal values for parameters that affect the engine's           %
+% performance. The parameters include stroke length (s), retardation of   %
+% closure of the intake valve (RCA), advancement of the exhaust valve      %
+% opening (AAE), advance in the closure of the combustion inlet valve     %
+% (AICB), and the compression ratio (RG).                                 %
+%                                                                         %
+% The optimization techniques are applied sequentially, and the results   %
+% are displayed along with execution times.                               %
+%                                                                         %
+% Author: Jon Errasti Odriozola                                           %
+% Date: May 2022                                                          %
+%-------------------------------------------------------------------------%
+%-------------------------------------------------------------------------%
 
-
-% Las variables para este trabajo he supuesto que son los mismos
-% que para el trabajo de MAA de grado: relacion carrera/diametro
-% del embolo, retardo al cierre de admision (RCA), adelanto a la
-% apertura del escape (AAE) y relacion de compresion. En clase se
-% dijo que tiene que ser de 4-6 variables, podemos meter un quinto
-
-
-%% Optimizacion tipo gradiente
-clc
-clear
-
-x0 = [40,30,45,37,16]; %Valores iniciales s, rca, aae, aicb, rg
-lb=[20 20, 35, 15,8];ub=[100 60 50 45 20]; % set Lower & Upper bounds
-% Start with the default options
-options = optimoptions('fmincon');
-% Modify options setting
-options = optimoptions(options,'Display', 'off');
-options = optimoptions(options,'Algorithm', 'sqp');
-%options = optimoptions(options,'DiffMinChange',10^0);
-%options = optimoptions(options,'OutputFcn',@plot_iter1);
-[x,fval,exitflag,output,lambda,grad,hessian] = ...
-fmincon(@F,x0,[],[],[],[],lb,ub,@constraints,options);
-disp(sprintf('F: Minimum is at x(1)=%f x(2)=%f x(3)=%f x(4)=%f x(5)=%f, Function value is %f',...
-    x(1),x(2),x(3),x(4),x(5),fval));
-
-
-%% Genetic algorithms
-clear
-clc
-time = cputime;
-nvars=7; lb=[40 44, 44, 44, 19];ub=[41 45 45 45 20]; % set Lower & Upper bounds
-options = optimoptions('ga');
-% Modify options setting
-options = optimoptions(options,'Display', 'iter');
-options = optimoptions(options,'PlotFcns',@gaplotbestf);
-options = optimoptions(options, 'MaxGenerations', 50)
-options = optimoptions(options, 'PopulationSize',100)
-%options = optimoptions(options,'OutputFcn', { @plot_iter1 })
-[x,fval,exitflag,output,population,score] = ...
-    ga(@F,nvars,[],[],[],[],lb,ub,[],[],options);
-disp(sprintf('F: Minimum is at x(1)=%f x(2)=%f x(3)=%f x(4)=%f x(5)=%f, Function value is %f',...
-    x(1),x(2),x(3),x(4),x(5),fval));
-time1 = cputime;
-timer = time1-time
+% Set initial parameters and options
+initialParameters = [40, 30, 45, 37, 16];
+lowerBounds = [20, 20, 35, 15, 8];
+upperBounds = [100, 60, 50, 45, 20];
 
 %%
-clc
-clear
-x0 = [40,30,45,37,16]; %Valores iniciales s, rca, aae, aicb, rg
-lb=[20 20, 35, 15,8];ub=[100 60 50 45 20]; % set Lower & Upper bounds
-% Start with the default options
-options = optimset('fminsearch');
-% Modify options setting
-options = optimset(options,'Display', 'iter');
-options = optimset(options,'Algorithm', 'active-set');
-%options = optimoptions(options,'DiffMinChange',10^0);
-%options = optimoptions(options,'OutputFcn',@plot_iter1);
-options = optimset('PlotFcns',@optimplotfval);
-[x,fval,exitflag,output] = ...
-fminsearch(@F,x0,options);
-disp(sprintf('F: Minimum is at x(1)=%f x(2)=%f x(3)=%f x(4)=%f x(5)=%f, Function value is %f',...
-    x(1),x(2),x(3),x(4),x(5),fval));
+%-------------------------------------------------------------------------%
+% Gradient-based optimization using fmincon
+%-------------------------------------------------------------------------%
+optimizationType = "Gradient-based (fmincon)";
+[xGradient, fvalGradient, exitflagGradient, outputGradient] = optimizeWithFmincon(initialParameters, lowerBounds, upperBounds);
+displayOptimizationResults(optimizationType, xGradient, fvalGradient);
+
+%%
+%-------------------------------------------------------------------------%
+% Genetic algorithms optimization
+%-------------------------------------------------------------------------%
+optimizationType = "Genetic Algorithms (ga)";
+[xGA, fvalGA, exitflagGA, outputGA] = optimizeWithGA(initialParameters, lowerBounds, upperBounds);
+displayOptimizationResults(optimizationType, xGA, fvalGA);
+
+%%
+%-------------------------------------------------------------------------%
+% Derivative-free optimization using fminsearch
+%-------------------------------------------------------------------------%
+optimizationType = "Derivative-free (fminsearch)";
+[xFminsearch, fvalFminsearch, exitflagFminsearch, outputFminsearch] = optimizeWithFminsearch(initialParameters);
+displayOptimizationResults(optimizationType, xFminsearch, fvalFminsearch);
+
+%%
+%-------------------------------------------------------------------------%
+% Functions
+%-------------------------------------------------------------------------%
+function [x, fval, exitflag, output] = optimizeWithFmincon(initialParameters, lowerBounds, upperBounds)
+    options = optimoptions('fmincon', 'Display', 'off', 'Algorithm', 'sqp');
+    [x, fval, exitflag, output] = fmincon(@F, initialParameters, [], [], [], [], lowerBounds, upperBounds, @constraints, options);
+end
+
+function [x, fval, exitflag, output] = optimizeWithGA(initialParameters, lowerBounds, upperBounds)
+    options = optimoptions('ga', 'Display', 'iter', 'PlotFcns', @gaplotbestf, 'MaxGenerations', 50, 'PopulationSize', 100);
+    [x, fval, exitflag, output] = ga(@F, length(initialParameters), [], [], [], [], lowerBounds, upperBounds, [], [], options);
+end
+
+function [x, fval, exitflag, output] = optimizeWithFminsearch(initialParameters)
+    options = optimset('fminsearch');
+    options.Display = 'iter';
+    options.Algorithm = 'active-set';
+    [x, fval, exitflag, output] = fminsearch(@F, initialParameters, options);
+end
+
+function displayOptimizationResults(optimizationType, x, fval)
+    fprintf('%s optimization:\n', optimizationType);
+    fprintf('Optimal parameters: %s\n', num2str(x));
+    fprintf('Optimal function value: %f\n', fval);
+    fprintf('\n');
+end
+
 
