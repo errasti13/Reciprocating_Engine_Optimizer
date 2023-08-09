@@ -24,9 +24,6 @@ initialParameters = [40, 30, 45, 37, 16];
 lowerBounds = [20, 20, 35, 15, 8];
 upperBounds = [100, 60, 50, 45, 20];
 
-% Add the models directory to the MATLAB path
-addpath('Engine_Model');
-
 %%
 %-------------------------------------------------------------------------%
 % Gradient-based optimization using fmincon
@@ -57,20 +54,19 @@ displayOptimizationResults(optimizationType, xFminsearch, fvalFminsearch);
 %-------------------------------------------------------------------------%
 function [x, fval, exitflag, output] = optimizeWithFmincon(initialParameters, lowerBounds, upperBounds)
     options = optimoptions('fmincon', 'Display', 'off', 'Algorithm', 'sqp');
-    [x, fval, exitflag, output] = fmincon(@F, initialParameters, [], [], [], [], lowerBounds, upperBounds, @constraints, options);
+    [x, fval, exitflag, output] = fmincon(@, initialParameters, [], [], [], [], lowerBounds, upperBounds, @constraintFunction, options);
 end
 
 function [x, fval, exitflag, output] = optimizeWithGA(initialParameters, lowerBounds, upperBounds)
     options = optimoptions('ga', 'Display', 'iter', 'PlotFcns', @gaplotbestf, 'MaxGenerations', 50, 'PopulationSize', 100);
-    [x, fval, exitflag, output] = ga(@F, length(initialParameters), [], [], [], [], lowerBounds, upperBounds, [], [], options);
+    [x, fval, exitflag, output] = ga(@objectiveFunction, length(initialParameters), [], [], [], [], lowerBounds, upperBounds, [], [], options);
 end
 
 function [x, fval, exitflag, output] = optimizeWithFminsearch(initialParameters)
-    options = optimset('fminsearch');
-    options.Display = 'iter';
-    options.Algorithm = 'active-set';
-    [x, fval, exitflag, output] = fminsearch(@F, initialParameters, options);
+    options = optimset('fminsearch', 'Display', 'iter', 'Algorithm', 'active-set');
+    [x, fval, exitflag, output] = fminsearch(@objectiveFunction, initialParameters, options);
 end
+
 
 function displayOptimizationResults(optimizationType, x, fval)
     fprintf('%s optimization:\n', optimizationType);
